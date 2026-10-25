@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpendLens — Smart Receipt & Personal Expense Tracker</title>
+  
+  <!-- Modern Accessible Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/responsive.css">
+
+  <!-- In-Browser Tesseract.js OCR Engine (100% Client-Side WebAssembly/Worker) -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+</head>
+<body>
+
+  <!-- App Header & Navigation Bar -->
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="brand-wrapper" data-view="home">
+        <div class="brand-icon">🧾</div>
+        <div class="brand-text">
+          <h1>SpendLens</h1>
+          <span class="brand-tagline">Smart Receipt & Expense Vault</span>
+        </div>
+      </div>
+
+      <!-- Desktop Navigation Menu -->
+      <nav class="main-nav" aria-label="Main Navigation">
+        <button type="button" class="nav-link active" data-view="home">
+          <span class="nav-icon">🏠</span> Home
+        </button>
+        <button type="button" class="nav-link" data-view="dashboard">
+          <span class="nav-icon">📊</span> Dashboard
+        </button>
+        <button type="button" class="nav-link" data-view="add-expense">
+          <span class="nav-icon">➕</span> Add Expense
+        </button>
+        <button type="button" class="nav-link" data-view="history">
+          <span class="nav-icon">📋</span> History
+        </button>
+        <button type="button" class="nav-link" data-view="reports">
+          <span class="nav-icon">📈</span> Reports
+        </button>
+        <button type="button" class="nav-link" data-view="budgets">
+          <span class="nav-icon">⚙️</span> Budgets & Data
+        </button>
+      </nav>
+
+      <!-- Currency Selector & Quick Action Button -->
+      <div class="header-actions">
+        <!-- Currency Dropdown (Rupees ₹, USD $, EUR €, etc.) -->
+        <div class="currency-selector-wrapper" title="Select your preferred currency unit">
+          <span>Currency:</span>
+          <select id="currency-selector" class="currency-select" aria-label="Currency Selector">
+            <!-- Populated dynamically: INR ₹, USD $, EUR €, etc. -->
+          </select>
+        </div>
+
+        <button type="button" class="btn btn-primary btn-sm" data-view="add-expense">
+          <span>➕</span> <span class="btn-text-hide">Add Expense</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Application Container -->
+  <main class="app-container">
+
+    <!-- Sample Data Notice Banner -->
+    <div id="sample-data-banner" class="sample-banner" style="display: none;">
+      <div class="banner-text">
+        <span class="sample-badge">Sample Data</span>
+        <span>Showing sample expenses to demonstrate dashboard metrics, OCR & reports.</span>
+      </div>
+      <div style="display: flex; gap: 0.5rem;">
+        <button type="button" class="btn btn-outline btn-sm" id="btn-clear-sample-data">Clear Samples</button>
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-reset-sample-data">Reset Samples</button>
+      </div>
+    </div>
+
+    <!-- ====================================================================
+         VIEW 0: WELCOMING HOME PAGE (Effective, Attractive, User-Friendly)
+         ==================================================================== -->
+    <section id="view-home" class="view-section active">
+      
+      <!-- Welcoming Hero Card -->
+      <div class="home-hero-card">
+        <div class="home-greeting-pill">
+          <span>✨</span> <span id="home-greeting">Good day! Here is your spending snapshot.</span>
+        </div>
+        
+        <div class="home-hero-grid">
+          <div>
+            <div class="home-pulse-label">This Month's Spending Pulse (October 2026)</div>
+            <div class="home-pulse-value" id="home-total-spent">₹0.00</div>
+            
+            <div style="display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; margin-top: 0.75rem;">
+              <span id="home-mom-alert" class="mom-pill neutral">Analyzing month spending...</span>
+              <span style="font-size: 0.85rem; color: #e0e7ff;" id="home-budget-remaining">Calculating budget...</span>
+            </div>
+
+            <div class="budget-progress-container" style="max-width: 440px; margin-top: 1rem;">
+              <div class="progress-track" style="background: rgba(255,255,255,0.2);">
+                <div id="home-budget-progress-fill" class="progress-fill safe" style="width: 0%; background: #10b981;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Prominent Redirect to Full Dashboard -->
+          <div class="home-hero-actions">
+            <button type="button" class="btn btn-lg" style="background: #ffffff; color: #312e81; font-weight: 800; font-size: 1.05rem; box-shadow: 0 4px 14px rgba(0,0,0,0.25);" data-view="dashboard">
+              📊 Go to Full Dashboard ➔
+            </button>
+            <button type="button" class="btn btn-outline btn-sm" style="border-color: rgba(255,255,255,0.4); color: white;" data-view="add-expense">
+              📸 Scan a New Receipt
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Action Cards (3-Card Grid) -->
+      <div class="home-shortcuts-grid">
+        
+        <div class="home-shortcut-card" data-view="add-expense">
+          <div>
+            <div class="home-shortcut-icon icon-purple">📸</div>
+            <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 0.35rem; color: var(--text-main);">
+              Auto-Scan Receipt
+            </h3>
+            <p style="font-size: 0.875rem; color: var(--text-muted); line-height: 1.5;">
+              Upload or snap a receipt photo. Our in-browser OCR automatically reads the store, date, total, and category!
+            </p>
+          </div>
+          <div style="margin-top: 1.25rem; font-weight: 700; color: var(--primary); font-size: 0.875rem;">
+            Upload & Auto-Read ➔
+          </div>
+        </div>
+
+        <div class="home-shortcut-card" data-view="add-expense">
+          <div>
+            <div class="home-shortcut-icon icon-emerald">✏️</div>
+            <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 0.35rem; color: var(--text-main);">
+              Add Manually
+            </h3>
+            <p style="font-size: 0.875rem; color: var(--text-muted); line-height: 1.5;">
+              No paper receipt? Enter your transaction amount, merchant, date, and category manually in seconds.
+            </p>
+          </div>
+          <div style="margin-top: 1.25rem; font-weight: 700; color: var(--primary); font-size: 0.875rem;">
+            Enter Details ➔
+          </div>
+        </div>
+
+        <div class="home-shortcut-card" data-view="history">
+          <div>
+            <div class="home-shortcut-icon icon-sky">📋</div>
+            <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 0.35rem; color: var(--text-main);">
+              Expense History & Vault
+            </h3>
+            <p style="font-size: 0.875rem; color: var(--text-muted); line-height: 1.5;">
+              Search, filter by date or category, view attached receipts, and export all records to clean CSV spreadsheets.
+            </p>
+          </div>
+          <div style="margin-top: 1.25rem; font-weight: 700; color: var(--primary); font-size: 0.875rem;">
+            View All Records ➔
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Recent Transactions Snapshot on Home Page -->
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title"><span>⏱️</span> Recent Spending Activity</h3>
+          <button type="button" class="btn btn-outline btn-sm" data-view="dashboard">View Full Dashboard ➔</button>
+        </div>
+        <div class="table-responsive">
+          <table class="expense-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Store / Provider</th>
+                <th>Category</th>
+                <th>Amount</th>
+                <th>Receipt</th>
+                <th style="text-align: right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="home-recent-list">
+              <!-- Populated dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ====================================================================
+         VIEW 1: DETAILED DASHBOARD
+         ==================================================================== -->
+    <section id="view-dashboard" class="view-section">
+      
+      <!-- Key Metric Cards Grid -->
+      <div class="dashboard-metrics-grid">
+        
+        <!-- Metric 1: Monthly Total -->
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-label">This Month's Spending</span>
+            <div class="metric-icon-box icon-purple">💳</div>
+          </div>
+          <div class="metric-value" id="dash-total-spent">₹0.00</div>
+          <div class="metric-caption">
+            <span id="dash-mom-pill" class="mom-pill neutral">—</span>
+            <span>vs same days last month</span>
+          </div>
+        </div>
+
+        <!-- Metric 2: Monthly Budget Progress -->
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-label">Monthly Budget</span>
+            <div class="metric-icon-box icon-emerald">🎯</div>
+          </div>
+          <div class="metric-value" id="dash-budget-remaining">₹0.00 left</div>
+          <div class="budget-progress-container">
+            <div class="progress-track">
+              <div id="dash-budget-progress-fill" class="progress-fill safe" style="width: 0%;"></div>
+            </div>
+            <div class="budget-stats-row">
+              <span id="dash-budget-subtext">0% of budget spent</span>
+              <a href="#" data-view="budgets" style="color: var(--primary); text-decoration: none; font-weight: 600;">Edit Limit</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Metric 3: Month-over-Month Comparison Alert -->
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-label">Month-over-Month Alert</span>
+            <div class="metric-icon-box icon-sky">📈</div>
+          </div>
+          <div id="dash-mom-message" style="font-size: 0.95rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.4rem; line-height: 1.4;">
+            Analyzing month spending...
+          </div>
+          <div class="metric-caption" id="dash-mom-dates-label" style="font-size: 0.775rem;">
+            Fair apples-to-apples day comparison
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Charts Section Grid -->
+      <div class="charts-grid">
+        
+        <!-- Chart 1: Category Distribution -->
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title"><span>🍩</span> Spending by Category</h3>
+            <span class="cat-percent-tag" id="dash-cat-month-tag">This Month</span>
+          </div>
+          <div class="card-body">
+            <div class="chart-wrapper">
+              <canvas id="chart-category-donut" width="340" height="240"></canvas>
+            </div>
+            <div id="dash-category-list" class="category-summary-list" style="margin-top: 1rem;">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Chart 2: Month Comparison -->
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title"><span>📊</span> This Month vs Last Month</h3>
+            <span style="font-size: 0.75rem; color: var(--text-muted);">Same Elapsed Days</span>
+          </div>
+          <div class="card-body">
+            <div class="chart-wrapper">
+              <canvas id="chart-mom-bars" width="320" height="240"></canvas>
+            </div>
+            <div style="margin-top: 1.25rem; padding: 0.85rem; background: var(--bg-page); border-radius: var(--radius-md); font-size: 0.85rem; color: var(--text-muted); text-align: center;">
+              💡 <strong>Fair Comparison:</strong> When the current month is in progress, we compare the exact same number of days so comparisons are accurate.
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Recently Attached Receipts Strip -->
+      <div id="dash-receipts-container" class="card" style="margin-bottom: 1.75rem; display: none;">
+        <div class="card-header">
+          <h3 class="card-title"><span>📎</span> Recent Receipt Documents</h3>
+          <span style="font-size: 0.8rem; color: var(--text-muted);">Click to inspect</span>
+        </div>
+        <div class="card-body" style="padding: 1rem;">
+          <div id="dash-receipts-strip" class="receipts-strip">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Transactions Table -->
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title"><span>⏱️</span> Recent Expenses</h3>
+          <button type="button" class="btn btn-outline btn-sm" data-view="history">View All History ➔</button>
+        </div>
+        <div class="table-responsive">
+          <table class="expense-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Store / Provider</th>
+                <th>Category</th>
+                <th>Amount</th>
+                <th>Receipt</th>
+                <th style="text-align: right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="dash-recent-list">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ====================================================================
+         VIEW 2: ADD / EDIT EXPENSE (Auto-OCR & Manual Fallback)
+         ==================================================================== -->
+    <section id="view-add-expense" class="view-section">
+      <div class="card" style="max-width: 680px; margin: 0 auto;">
+        <div class="card-header">
+          <h2 class="card-title" id="form-page-title">Add New Expense</h2>
+          <button type="button" class="btn btn-outline btn-sm" data-view="home">Back to Home</button>
+        </div>
+        <div class="card-body">
+          
+          <!-- Live OCR Progress / Status Banner -->
+          <div id="ocr-status-banner" class="duplicate-warning" style="display: none;"></div>
+
+          <!-- Duplicate Warning Callout Banner -->
+          <div id="duplicate-warning-banner" class="duplicate-warning" style="display: none;"></div>
+
+          <form id="expense-form">
+            
+            <!-- Receipt Upload Dropzone -->
+            <div class="form-group" style="margin-bottom: 1.25rem;">
+              <label class="form-label">
+                Receipt File (Image or PDF) 
+                <span style="color: var(--primary); font-weight: 500; font-size: 0.8rem;">— Auto-reads text via OCR!</span>
+              </label>
+              
+              <div id="receipt-dropzone" class="dropzone-box">
+                <div class="dropzone-icon">📷</div>
+                <div class="dropzone-text">Click to upload or drag & drop receipt</div>
+                <div class="dropzone-subtext">Automatic in-browser OCR will read store, date & total amount</div>
+              </div>
+              
+              <input type="file" id="receipt-file-input" accept="image/*,application/pdf" style="display: none;">
+              
+              <!-- Preview Card (shown after upload) -->
+              <div id="receipt-preview-container" style="display: none; margin-top: 0.5rem;"></div>
+            </div>
+
+            <div class="form-grid">
+              
+              <!-- Store / Merchant -->
+              <div class="form-group full-width">
+                <label for="expense-store" class="form-label">Store or Provider <span style="color: var(--danger);">*</span></label>
+                <input type="text" id="expense-store" class="form-input" placeholder="e.g. Reliance Fresh, DMart, Blue Bottle, Shell" required>
+              </div>
+
+              <!-- Amount -->
+              <div class="form-group">
+                <label for="expense-amount" class="form-label">Amount <span style="color: var(--danger);">*</span></label>
+                <input type="number" id="expense-amount" class="form-input" placeholder="0.00" step="0.01" min="0.01" required>
+              </div>
+
+              <!-- Date -->
+              <div class="form-group">
+                <label for="expense-date" class="form-label">Transaction Date <span style="color: var(--danger);">*</span></label>
+                <input type="date" id="expense-date" class="form-input" required>
+              </div>
+
+              <!-- Category -->
+              <div class="form-group full-width">
+                <label for="expense-category" class="form-label">Category <span style="color: var(--danger);">*</span></label>
+                <select id="expense-category" class="form-select" required>
+                  <!-- Populated by JS -->
+                </select>
+              </div>
+
+              <!-- Optional Note -->
+              <div class="form-group full-width">
+                <label for="expense-note" class="form-label">Optional Note</label>
+                <input type="text" id="expense-note" class="form-input" placeholder="e.g. Monthly groceries, coffee with friend, petrol refill">
+                <span class="form-hint">Add warranty details or items purchased. If OCR couldn't read cleanly, adjust fields manually here.</span>
+              </div>
+
+            </div>
+
+            <!-- Confirmation note -->
+            <div style="margin-top: 1.5rem; padding: 0.85rem; background: var(--bg-subtle); border-radius: var(--radius-md); font-size: 0.8125rem; color: var(--text-muted);">
+              🔒 <strong>Verification Rule:</strong> Your expense is never saved automatically. You must confirm the amount, date, and category before saving.
+            </div>
+
+            <div style="margin-top: 1.25rem; display: flex; gap: 0.75rem; justify-content: flex-end;">
+              <button type="button" class="btn btn-outline" data-view="dashboard">Cancel</button>
+              <button type="submit" id="btn-submit-expense" class="btn btn-primary btn-lg">
+                💾 Confirm & Save Expense
+              </button>
+            </div>
+
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         VIEW 3: HISTORY & SEARCH
+         ==================================================================== -->
+    <section id="view-history" class="view-section">
+      
+      <!-- Filter Toolbar -->
+      <div class="toolbar-container">
+        
+        <!-- Search bar -->
+        <div class="search-input-wrapper">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="history-search" placeholder="Search store, note, or category...">
+        </div>
+
+        <!-- Filter Dropdowns -->
+        <div class="filters-group">
+          
+          <select id="history-category-filter" class="form-select">
+            <!-- Populated by JS -->
+          </select>
+
+          <select id="history-month-filter" class="form-select">
+            <!-- Populated by JS -->
+          </select>
+
+          <select id="history-sort" class="form-select">
+            <option value="date-desc">Newest Date First</option>
+            <option value="date-asc">Oldest Date First</option>
+            <option value="amount-desc">Highest Amount</option>
+            <option value="amount-asc">Lowest Amount</option>
+            <option value="store-asc">Store Name (A-Z)</option>
+          </select>
+
+          <button type="button" id="btn-reset-filters" class="btn btn-outline btn-sm" title="Clear all filters">
+            Reset
+          </button>
+        </div>
+
+        <!-- Export Action -->
+        <div style="display: flex; gap: 0.5rem;">
+          <button type="button" id="btn-export-csv" class="btn btn-secondary btn-sm" title="Export to CSV spreadsheet">
+            📥 Export CSV
+          </button>
+        </div>
+
+      </div>
+
+      <!-- History Summary Bar -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; font-size: 0.875rem; color: var(--text-muted); padding: 0 0.5rem;">
+        <span id="history-count-badge">0 records</span>
+        <span>Filtered Total: <strong id="history-filtered-total" style="color: var(--text-main); font-size: 1rem;">₹0.00</strong></span>
+      </div>
+
+      <!-- Main History Table -->
+      <div class="card">
+        <div class="table-responsive">
+          <table class="expense-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Store / Provider</th>
+                <th>Category</th>
+                <th>Amount</th>
+                <th>Receipt</th>
+                <th style="text-align: right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="history-table-body">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ====================================================================
+         VIEW 4: MONTHLY REPORTS
+         ==================================================================== -->
+    <section id="view-reports" class="view-section">
+      
+      <!-- Month Selector Header -->
+      <div class="card" style="margin-bottom: 1.5rem;">
+        <div class="card-header">
+          <h2 class="card-title" id="report-month-title">Monthly Spending Report</h2>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <label for="report-month-select" style="font-size: 0.85rem; font-weight: 600;">Month:</label>
+            <select id="report-month-select" class="form-select">
+              <!-- Populated by JS -->
+            </select>
+          </div>
+        </div>
+        <div class="card-body">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; text-align: center;">
+            <div style="padding: 1rem; background: var(--bg-page); border-radius: var(--radius-md);">
+              <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Total Spent</div>
+              <div id="report-total-spent" style="font-size: 2rem; font-weight: 800; color: var(--text-main);">₹0.00</div>
+            </div>
+            <div style="padding: 1rem; background: var(--bg-page); border-radius: var(--radius-md);">
+              <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Transaction Count</div>
+              <div id="report-tx-count" style="font-size: 2rem; font-weight: 800; color: var(--primary);">0</div>
+            </div>
+          </div>
+
+          <!-- MoM Comparison Callout -->
+          <div id="report-mom-alert-box" style="margin-top: 1.25rem;" class="duplicate-warning">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Category Breakdown Table -->
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title"><span>📋</span> Category Breakdown & Share of Wallet</h3>
+        </div>
+        <div class="table-responsive">
+          <table class="expense-table">
+            <thead>
+              <tr>
+                <th>Category</th>
+                <th>Total Spent</th>
+                <th>% of Month</th>
+                <th>Transactions</th>
+                <th>MoM Comparison (vs Last Month)</th>
+              </tr>
+            </thead>
+            <tbody id="report-category-table-body">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ====================================================================
+         VIEW 5: BUDGETS & BACKUP SETTINGS
+         ==================================================================== -->
+    <section id="view-budgets" class="view-section">
+      <div class="form-grid" style="grid-template-columns: 1.2fr 1fr; gap: 1.5rem;">
+        
+        <!-- Monthly Budget Setting Card -->
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title"><span>🎯</span> Set Monthly Budgets</h3>
+          </div>
+          <div class="card-body">
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+              <label class="form-label" for="budget-overall-input">Overall Monthly Spending Limit</label>
+              <input type="number" id="budget-overall-input" class="form-input" step="500" min="100">
+              <span class="form-hint">Used for the dashboard progress bar and warning alerts in your selected currency.</span>
+            </div>
+
+            <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.75rem; color: var(--text-main);">
+              Category Spending Limits
+            </h4>
+            
+            <div id="budget-categories-grid" class="form-grid" style="gap: 0.85rem;">
+              <!-- Populated by JS -->
+            </div>
+
+            <div style="margin-top: 1.5rem; text-align: right;">
+              <button type="button" id="btn-save-budgets" class="btn btn-primary">
+                💾 Save Budget Limits
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Data Backup & Restore Card -->
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title"><span>💾</span> Backup, Restore & Privacy</h3>
+          </div>
+          <div class="card-body">
+            <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1.25rem; line-height: 1.6;">
+              All records, receipt documents, and budgets are stored <strong>100% locally in your browser's localStorage</strong>. No financial details or images are sent to external servers.
+            </p>
+
+            <div style="display: flex; flex-direction: column; gap: 0.85rem;">
+              <button type="button" id="btn-backup-json" class="btn btn-outline" style="justify-content: flex-start;">
+                <span>📦</span> Download Complete JSON Backup
+              </button>
+
+              <label class="btn btn-outline" style="justify-content: flex-start; cursor: pointer; margin-bottom: 0;">
+                <span>📥</span> Restore from JSON Backup
+                <input type="file" id="restore-file-input" accept=".json" style="display: none;">
+              </label>
+
+              <button type="button" class="btn btn-danger btn-sm" id="btn-clear-all-data" style="margin-top: 1.5rem; justify-content: flex-start;" onclick="if(confirm('Are you sure you want to permanently delete all expenses? This cannot be undone.')){ StorageService.clearAllData(); App.renderDashboard(); App.showToast('All data erased.', 'danger'); }">
+                <span>🗑️</span> Erase All Data (Fresh Start)
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Detail Modal: View Receipt & Information -->
+  <div id="modal-expense-detail" class="modal-backdrop">
+    <div class="modal-dialog large">
+      <div class="modal-header">
+        <h3 class="modal-title" id="detail-store-name">Expense Details</h3>
+        <button type="button" class="btn-icon-only btn-close-modal" aria-label="Close modal">✕</button>
+      </div>
+      <div class="modal-body">
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.85rem; margin-bottom: 1.25rem;">
+          <div style="padding: 0.75rem; background: var(--bg-page); border-radius: var(--radius-md);">
+            <div style="font-size: 0.75rem; color: var(--text-muted);">Amount</div>
+            <div id="detail-amount" style="font-size: 1.4rem; font-weight: 800; color: var(--text-main);">₹0.00</div>
+          </div>
+          <div style="padding: 0.75rem; background: var(--bg-page); border-radius: var(--radius-md);">
+            <div style="font-size: 0.75rem; color: var(--text-muted);">Date</div>
+            <div id="detail-date" style="font-weight: 700;">—</div>
+          </div>
+          <div style="padding: 0.75rem; background: var(--bg-page); border-radius: var(--radius-md);">
+            <div style="font-size: 0.75rem; color: var(--text-muted);">Category</div>
+            <div id="detail-category" style="font-weight: 700;">—</div>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 1.25rem;">
+          <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.3rem;">Notes:</div>
+          <div id="detail-note" style="padding: 0.65rem 0.85rem; background: var(--bg-page); border-radius: var(--radius-md); font-size: 0.875rem;">—</div>
+        </div>
+
+        <!-- Receipt Document Section -->
+        <div id="detail-receipt-container"></div>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline btn-close-modal">Close</button>
+        <button type="button" id="btn-detail-edit" class="btn btn-secondary">✏️ Edit</button>
+        <button type="button" id="btn-detail-delete" class="btn btn-danger">🗑️ Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Bottom Navigation Bar -->
+  <nav class="mobile-bottom-nav" aria-label="Mobile Navigation">
+    <ul class="mobile-nav-items">
+      <li>
+        <button type="button" class="mobile-nav-link active" data-view="home">
+          <span class="m-icon">🏠</span>
+          <span>Home</span>
+        </button>
+      </li>
+      <li>
+        <button type="button" class="mobile-nav-link" data-view="dashboard">
+          <span class="m-icon">📊</span>
+          <span>Dash</span>
+        </button>
+      </li>
+      <li>
+        <button type="button" class="mobile-nav-link" data-view="add-expense">
+          <span class="m-icon">➕</span>
+          <span>Add</span>
+        </button>
+      </li>
+      <li>
+        <button type="button" class="mobile-nav-link" data-view="history">
+          <span class="m-icon">📋</span>
+          <span>History</span>
+        </button>
+      </li>
+      <li>
+        <button type="button" class="mobile-nav-link" data-view="reports">
+          <span class="m-icon">📈</span>
+          <span>Reports</span>
+        </button>
+      </li>
+    </ul>
+  </nav>
+
+  <!-- Floating Toast Notifications -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Footer -->
+  <footer class="app-footer">
+    <div class="footer-inner">
+      <span>SpendLens • Personal Expense & Receipt Tracker</span>
+      <span>🔒 Local-first privacy architecture • No cloud tracking</span>
+    </div>
+  </footer>
+
+  <!-- Core JavaScript Modules -->
+  <script src="js/storage.js"></script>
+  <script src="js/receipt.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/reports.js"></script>
+  <script src="js/export.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>
