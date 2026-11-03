@@ -1,3 +1,4 @@
+
 # 🧾 SpendLens — Smart Receipt & Personal Expense Tracker
 
 > **An attractive, responsive, and privacy-focused personal expense tracker built with pure HTML, CSS, and modern JavaScript. Features automatic in-browser OCR receipt reading, a currency switcher (Rupees ₹, USD $, EUR €, etc.), an effective welcoming Home Page, and fair month-over-month analytics.**
@@ -78,3 +79,6 @@ python -m http.server 8080
 ```
 
 *(You can also double-click [`index.html`](file:///C:/Users/prachi/.gemini/antigravity/scratch/expense-tracker/index.html) to open it directly in any browser without needing a server!)*
+=======
+# expense-tracker
+A responsive Expense Tracker web application to manage daily income and expenses, monitor spending habits, visualize financial reports, and track budget insights.
