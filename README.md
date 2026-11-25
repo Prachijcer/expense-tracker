@@ -8,7 +8,7 @@
 ## 🌟 What's New & Highlights
 
 1. **🇮🇳 Multi-Currency Support (Rupees `₹` by Default)**:
-   - Currency dropdown right in the header bar.
+   - Currency dropdown right in the header bar
    - Switch between **Indian Rupee (`₹`)**, **US Dollar (`$`)**, **Euro (`€`)**, **British Pound (`£`)**, **Canadian Dollar (`C$`)**, **Australian Dollar (`A$`)**, or **Japanese Yen (`¥`)**.
    - Changing the currency dynamically recalculates and re-formats all dashboard metrics, charts, budget limits, history items, and reports using native localized formatting (e.g. `₹1,25,000.00`).
 
